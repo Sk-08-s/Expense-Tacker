@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Login - Expense Tracker</title>
+
+    <!-- External Styles & Scripts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="js/api-handler.js"></script>
+    <script src="js/transaction-handler.js"></script>
+
+    <!-- Internal Styles -->
+    <style>
+        /* Base Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .header {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 20px 0;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .header img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-right: 15px;
+            vertical-align: middle;
+        }
+
+        .header h1 {
+            color: white;
+            display: inline-block;
+            margin: 0;
+            vertical-align: middle;
+        }
+
+        /* Login Container Styles */
+        .login-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            color: #764ba2;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            border-color: #764ba2;
+            outline: none;
+        }
+
+        /* Error Message Styles */
+        .error-message {
+            color: #e53935;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            text-align: left;
+            display: none;
+        }
+
+        /* Button Styles */
+        .login-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Social Login Styles */
+        .social-login {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .social-login button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .social-login button i {
+            margin-right: 10px;
+        }
+
+        .social-login .facebook-btn {
+            background-color: #4267B2;
+            color: white;
+        }
+
+        .social-login .google-btn {
+            background-color: #DB4437;
+            color: white;
+        }
+
+        .social-login button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Link Styles */
+        .forgot-password {
+            display: block;
+            margin: 20px 0;
+            color: #764ba2;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password:hover {
+            color: #667eea;
+        }
+
+        .signup-link {
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .signup-link a {
+            color: #764ba2;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer Styles */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            margin-top: auto;
+        }
+
+        .footer p {
+            margin: 0 0 15px 0;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            opacity: 0.8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .login-box {
+                padding: 20px;
+            }
+
+            .social-login {
+                flex-direction: column;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <img src="https://i.ibb.co/X2BYFDs/logo.jpg" alt="Expense Tracker Logo">
+        <h1>Expense Tracker</h1>
+    </div>
+
+    <!-- Login Section -->
+    <div class="login-container">
+        <div class="login-box">
+            <h2>Welcome Back!</h2>
+            <form id="loginForm" class="login-form">
+                <input type="hidden" id="csrfToken" name="csrfToken">
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required />
+                </div>
+
+                <div id="error-message" class="error-message" style="display: none;"></div>
+                <button type="submit" class="login-button">Login</button>
+            </form>
+
+            <a href="#" class="forgot-password">Forgot your password?</a>
+
+            <div class="social-login">
+                <button class="facebook-btn" onclick="facebookLogin()">
+                    <i class="fab fa-facebook-f"></i> Facebook
+                </button>
+                <button class="google-btn" onclick="googleLogin()">
+                    <i class="fab fa-google"></i> Google
+                </button>
+            </div>
+
+            <div class="signup-link">
+                Don't have an account? <a href="signup.html">Sign up</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>© 2024 Expense Tracker</p>
+        <div class="footer-links">
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="terms.html">Terms of Service</a>
+            <a href="signup.html">Sign Up</a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        const generateCSRFToken = () => {
+            return CryptoJS.lib.WordArray.random(32).toString();
+        };
+
+        const hashPassword = async (password) => {
+            const salt = await bcrypt.genSalt(10);
+            return bcrypt.hash(password, salt);
+        };
+
+        function showError(message) {
+            const errorContainer = document.getElementById('error-message');
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+            setTimeout(() => errorContainer.style.display = 'none', 5000);
+        }
+
+        // Simple hash function for fallback
+        function simpleHash(str) {
+            return btoa(str); // Basic encoding, not secure but allows login to work
+        }
+
+        // Modified password verification function
+        async function verifyPassword(inputPassword, storedPassword) {
+            try {
+                if (typeof bcrypt !== 'undefined') {
+                    // Use bcrypt if available
+                    return await bcrypt.compare(inputPassword, storedPassword);
+                } else {
+                    // Fallback to simple comparison if bcrypt fails
+                    const hashedInput = simpleHash(inputPassword);
+                    return hashedInput === storedPassword;
+                }
+            } catch (error) {
+                console.error('Password verification error:', error);
+                throw error;
+            }
+        }
+
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            try {
+                const email = document.getElementById("email").value.trim();
+                const password = document.getElementById("password").value;
+                
+                // Input validation
+                if (!email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+
+                // Check if user exists in localStorage
+                const storedEmail = localStorage.getItem("userEmail");
+                const storedPassword = localStorage.getItem("userPassword");
+                
+                if (!storedEmail || !storedPassword) {
+                    showError("No registered user found. Please sign up first.");
+                    return;
+                }
+
+                // Debug log
+                console.log('Attempting login for:', email);
+                
+                if (email === storedEmail) {
+                    try {
+                        const passwordMatch = await verifyPassword(password, storedPassword);
+                        if (passwordMatch) {
+                            // Successful login
+                            window.location.href = "welcome.html";
+                        } else {
+                            showError("Invalid password");
+                        }
+                    } catch (verifyError) {
+                        console.error('Verification error:', verifyError);
+                        showError("An error occurred during password verification");
+                    }
+                } else {
+                    showError("Email not found");
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError("An error occurred during login");
+            }
+        });
+
+        function facebookLogin() {
+            // Facebook login implementation
+            alert("Facebook login will be implemented");
+        }
+
+        function googleLogin() {
+            // Google login implementation
+            alert("Google login will be implemented");
+        }
+    </script>
+</body>
+</html>

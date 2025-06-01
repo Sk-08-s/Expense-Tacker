@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Transaction - Expense Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="js/api-handler.js"></script>
+    <script src="js/transaction-handler.js"></script>
+    <script>
+      
+        // Get the transaction type buttons
+        const incomeBtn = document.querySelector('.type-btn.income');
+        const expenseBtn = document.querySelector('.type-btn.expense');
+        
+        // Add click event listeners to both buttons
+        incomeBtn.addEventListener('click', () => {
+            incomeBtn.classList.add('active');
+            expenseBtn.classList.remove('active');
+            updateCategoryDropdowns();
+        });
+        
+        expenseBtn.addEventListener('click', () => {
+            expenseBtn.classList.add('active');
+            incomeBtn.classList.remove('active');
+            updateCategoryDropdowns();
+        });
+        
+        // Function to get the current transaction type
+        function getTransactionType() {
+            return document.querySelector('.type-btn.active').dataset.type;
+        }
+        </script>
+  
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-header h2 {
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #764ba2;
+            outline: none;
+        }
+        .transaction-type {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .type-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .type-btn.income {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .type-btn.expense {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .type-btn.active {
+            transform: scale(0.98);
+            font-weight: bold;
+        }
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.3s;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .back-btn i {
+            margin-right: 8px;
+        }
+        /* Subcategory styling */
+        .subcategory-group {
+            margin-top: 10px;
+            display: none;
+        }
+        .subcategory-group.active {
+            display: block;
+        }
+        /* Recurring transaction toggle */
+        .recurring-toggle {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .recurring-options {
+            margin-top: 10px;
+            display: none;
+        }
+        .recurring-options.active {
+            display: block;
+        }
+        .invalid {
+            border-color: #dc3545 !important;
+            background-color: #fff8f8;
+        }
+        #error-container {
+            display: none;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #fff8f8;
+        }
+        .error-message {
+            color: #dc3545;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        /* Add category button and modal */
+        .add-category-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .add-category-btn:hover {
+            background: #e0e0e0;
+        }
+        .category-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        <div class="form-card">
+            <div class="form-header">
+                <h2>Add Transaction</h2>
+                <p>Record your income or expense</p>
+            </div>
+            <form id="transactionForm">
+                <div class="transaction-type">
+                    <button type="button" class="type-btn income active" data-type="income">
+                        <i class="fas fa-plus-circle"></i> Income
+                    </button>
+                    <button type="button" class="type-btn expense" data-type="expense">
+                        <i class="fas fa-minus-circle"></i> Expense
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount (₹)</label>
+                    <input type="number" id="amount" required min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" required>
+                        <option value="">Select Category</option>
+                        <!-- Income Categories -->
+                        <optgroup label="Income" class="income-categories">
+                            <option value="salary">Salary</option>
+                            <option value="business">Business Income</option>
+                            <option value="investments">Investments</option>
+                            <option value="other_income">Other Income</option>
+                            <option value="savings">Savings Withdrawals</option>
+                        </optgroup>
+                        <!-- Expense Categories -->
+                        <optgroup label="Expenses" class="expense-categories">
+                            <option value="housing">Housing</option>
+                            <option value="debt">Debt Payments</option>
+                            <option value="food">Food & Dining</option>
+                            <option value="transportation">Transportation</option>
+                            <option value="health">Health & Fitness</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="shopping">Shopping</option>
+                            <option value="travel">Travel</option>
+                            <option value="savings">Savings</option>
+                            <option value="gifts">Gifts & Donations</option>
+                            <option value="miscellaneous">Miscellaneous</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="subcategory">Subcategory</label>
+                    <select id="subcategory" required>
+                        <option value="">Select Subcategory</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" rows="3" placeholder="Add notes or details"></textarea>
+                </div>
+                <div class="recurring-toggle">
+                    <label>
+                        <input type="checkbox" id="isRecurring"> This is a recurring transaction
+                    </label>
+                    <div class="recurring-options">
+                        <div class="form-group">
+                            <label for="frequency">Frequency</label>
+                            <select id="frequency">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn">Add Transaction</button>
+                <script>
+                // Add form submission handler
+                document.getElementById('transactionForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const type = document.querySelector('.type-btn.active').dataset.type;
+                    const amount = parseFloat(document.getElementById('amount').value);
+                    
+                    const transaction = {
+                        type: type,
+                        amount: type === 'expense' ? -amount : amount,  // Make amount negative for expenses
+                        category: document.getElementById('category').value,
+                        subcategory: document.getElementById('subcategory').value,
+                        date: document.getElementById('date').value,
+                        description: document.getElementById('description').value,
+                        isRecurring: document.getElementById('isRecurring').checked,
+                        frequency: document.getElementById('isRecurring').checked ? document.getElementById('frequency').value : null
+                    };
+                
+                    try {
+                        TransactionHandler.saveTransaction(transaction);
+                        alert('Transaction saved successfully!');
+                        window.location.href = 'dashboard.html';
+                    } catch (error) {
+                        console.error('Error saving transaction:', error);
+                        alert('Error saving transaction. Please try again.');
+                    }
+                });
+                </script>
+            </form>
+        </div>
+        <div id="error-container"></div>
+    </div>
+    <script>
+    // Category system
+    const categorySystem = {
+        income: {
+            name: "Income",
+            subcategories: {
+                salary: ["Regular Salary", "Bonus", "Overtime"],
+                business: ["Sales", "Services", "Consulting"],
+                investments: ["Dividends", "Interest", "Rental", "Stock Sales"],
+                other_income: ["Gifts", "Refunds", "Miscellaneous"],
+                custom: [] // For user-defined categories
+            }
+        },
+        expense: {
+            name: "Expenses",
+            subcategories: {
+                housing: ["Rent", "Mortgage", "Utilities", "Maintenance"],
+                transportation: ["Fuel", "Public Transit", "Vehicle Maintenance", "Parking"],
+                food: ["Groceries", "Dining Out", "Snacks"],
+                healthcare: ["Medical", "Medications", "Insurance"],
+                entertainment: ["Movies", "Games", "Hobbies", "Subscriptions"],
+                shopping: ["Clothing", "Electronics", "Home Items"],
+                education: ["Tuition", "Books", "Courses"],
+                custom: [] // For user-defined categories
+            }
+        }
+    };
+
+    // Load custom categories from localStorage
+    function loadCustomCategories() {
+        const savedCategories = localStorage.getItem('customCategories');
+        if (savedCategories) {
+            const parsed = JSON.parse(savedCategories);
+            categorySystem.income.subcategories.custom = parsed.income || [];
+            categorySystem.expense.subcategories.custom = parsed.expense || [];
+        }
+    }
+
+    // Save custom categories to localStorage
+    function saveCustomCategories() {
+        const customCategories = {
+            income: categorySystem.income.subcategories.custom,
+            expense: categorySystem.expense.subcategories.custom
+        };
+        localStorage.setItem('customCategories', JSON.stringify(customCategories));
+    }
+
+    // Add custom category
+    function addCustomCategory(type, category, subcategories = []) {
+        if (!categorySystem[type].subcategories.custom.includes(category)) {
+            categorySystem[type].subcategories.custom.push(category);
+            saveCustomCategories();
+            updateCategoryDropdowns();
+        }
+    }
+
+    // Update category dropdowns
+    function updateCategoryDropdowns() {
+        const categorySelect = document.getElementById('category');
+        const subcategorySelect = document.getElementById('subcategory');
+        const transactionType = document.querySelector('.type-btn.active').dataset.type;
+        
+        // Clear existing options
+        categorySelect.innerHTML = '<option value="">Select Category</option>';
+        
+        // Add standard categories
+        Object.keys(categorySystem[transactionType].subcategories).forEach(category => {
+            if (category !== 'custom') {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                categorySelect.appendChild(option);
+            }
+        });
+        
+        // Add custom categories
+        if (categorySystem[transactionType].subcategories.custom.length > 0) {
+            const customOptgroup = document.createElement('optgroup');
+            customOptgroup.label = 'Custom Categories';
+            
+            categorySystem[transactionType].subcategories.custom.forEach(category => {
+                const option = document.createElement('option');
+                option.value = `custom_${category}`;
+                option.textContent = category;
+                customOptgroup.appendChild(option);
+            });
+            
+            categorySelect.appendChild(customOptgroup);
+        }
+    }
+
+    // Add new category button and modal
+    const addCategoryBtn = document.createElement('button');
+    addCategoryBtn.type = 'button';
+    addCategoryBtn.className = 'add-category-btn';
+    addCategoryBtn.innerHTML = '<i class="fas fa-plus"></i> Add Custom Category';
+    // addCategoryBtn.onclick = showAddCategoryModal; // Uncomment and define this function as needed
+
+    // Initialize the category system
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCustomCategories();
+        updateCategoryDropdowns();
+
+        // Add event listeners for category changes
+        document.getElementById('category').addEventListener('change', (e) => {
+            const subcategorySelect = document.getElementById('subcategory');
+            const selectedCategory = e.target.value;
+            const transactionType = document.querySelector('.type-btn.active').dataset.type;
+            
+            if (selectedCategory) {
+                const categoryKey = selectedCategory.startsWith('custom_') 
+                    ? selectedCategory.slice(7) 
+                    : selectedCategory;
+                
+                const subcategories = categorySystem[transactionType].subcategories[categoryKey] || [];
+                
+                subcategorySelect.innerHTML = subcategories.map(sub => 
+                    `<option value="${sub}">${sub}</option>`
+                ).join('');
+                
+                subcategorySelect.style.display = subcategories.length ? 'block' : 'none';
+            } else {
+                subcategorySelect.style.display = 'none';
+            }
+        });
+    });
+    </script>
+</body>
+</html>

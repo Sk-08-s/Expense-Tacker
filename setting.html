@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    
+    <script src="js/api-handler.js"></script>
+<script src="js/transaction-handler.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+
+        .settings-container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .settings-title {
+            font-size: 2.5rem;
+            color: #3f51b5;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .settings-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f8f8;
+            border-radius: 6px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .settings-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .settings-section h2 {
+            font-size: 1.5rem;
+            color: #1a237e;
+            margin-bottom: 15px;
+        }
+
+        .settings-option {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .settings-option:last-child {
+            border-bottom: none;
+        }
+
+        .settings-option h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: #444;
+        }
+
+        .settings-option p {
+            margin-bottom: 12px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .settings-form input {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .settings-form input:focus {
+            border-color: #3f51b5;
+            outline: none;
+            box-shadow: 0 0 5px rgba(63, 81, 181, 0.3);
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            color: #fff;
+            background-color: #3f51b5;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #283593;
+        }
+
+        .danger-btn {
+            background-color: #e53935;
+        }
+
+        .danger-btn:hover {
+            background-color: #c62828;
+        }
+        
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+        
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7) url('data:image/gif;base64,R0lGODlhEAAQAPIAAP///wAAAMLCwkJCQgAAAGJiYoKCgpKSkiH+GkNyZWF0ZWQgd2l0aCBhamF4bG9hZC5pbmZvACH5BAAKAAAAIf8LTkVUU0NBUEUyLjADAQAAACwAAAAAEAAQAAADMwi63P4wyklrE2MIOggZnAdOmGYJRbExwroUmcG2LmDEwnHQLVsYOd2mBzkYDAdKa+dIAAAh+QQACgABACwAAAAAEAAQAAADNAi63P5OjCEgG4QMu7DmikRxQlFUYDEZIGBMRVsaqHwctXXf7WEYB4Ag1xjihkMZsiUkKhIAIfkEAAoAAgAsAAAAABAAEAAAAzYIujIjK8pByJDMlFYvBoVjHA70GU7xSUJhmKtwHPAKzLO9HMaoKwJZ7Rf8AYPDDzKpZBqfvwQAIfkEAAoAAwAsAAAAABAAEAAAAzMIumIlK8oyhpHsnFZfhYumCYUhDAQxRIdhHBGqRoKw0R8DYlJd8z0fMDgsGo/IpHI5TAAAIfkEAAoABAAsAAAAABAAEAAAAzIIunInK0rnZBTwGPNMgQwmdsNgXGJUlIWEuR5oWUIpz8pAEAMe6TwfwyYsGo/IpFKSAAAh+QQACgAFACwAAAAAEAAQAAADMwi6IMKQORfjdOe82p4wGccc4CEuQradylesojEMBgsUc2G7sDX3lQGBMLAJibufbSlKAAAh+QQACgAGACwAAAAAEAAQAAADMgi63P7wCRHZnFVdmgHu2nFwlWCI3WGc3TSWhUFGxTAUkGCbtgENBMJAEJsxgMLWzpEAACH5BAAKAAcALAAAAAAQABAAAAMyCLrc/jDKSatlQtScKdceCAjDII7HcQ4EMTCpyrCuUBjCYRgHVtqlAiB1YhiCnlsRkAAAOwAAAAAAAAAAAA==') center no-repeat;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: white;
+            width: 80%;
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .budget-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .budget-input input[type="number"] {
+            width: 150px;
+        }
+
+        .notification-option {
+            margin: 10px 0;
+        }
+
+        .custom-category {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .error-message {
+            color: #e53935;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <h1 class="settings-title">Settings</h1>
+
+        <!-- Profile Section -->
+        <div class="settings-section">
+            <h2>Profile Settings</h2>
+            <div class="settings-option">
+                <h3>Personal Information</h3>
+                <form id="profileForm" class="settings-form">
+                    <input type="text" id="fullName" placeholder="Full Name" required>
+                    <input type="tel" id="phone" placeholder="Phone Number">
+                    <input type="text" id="currency" placeholder="Preferred Currency (e.g., USD)" required>
+                    <button type="submit">Update Profile</button>
+                    <div class="error-message" id="profileError"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Budget Section -->
+        <div class="settings-section">
+            <h2>Budget Settings</h2>
+            <div class="settings-option">
+                <h3>Monthly Limits</h3>
+                <form id="budgetForm" class="settings-form">
+                    <div class="budget-input">
+                        <input type="number" id="totalBudget" placeholder="Total Monthly Budget" required min="0">
+                        <select id="budgetCurrency">
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                        </select>
+                    </div>
+                    <div id="categoryBudgets"></div>
+                    <button type="submit">Save Budget Limits</button>
+                    <div class="error-message" id="budgetError"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notifications Section -->
+        <div class="settings-section">
+            <h2>Notification Settings</h2>
+            <div class="settings-option">
+                <form id="notificationForm" class="settings-form">
+                    <div class="notification-option">
+                        <input type="checkbox" id="budgetAlerts">
+                        <label for="budgetAlerts">Budget Alerts</label>
+                    </div>
+                    <div class="notification-option">
+                        <input type="checkbox" id="weeklyReport">
+                        <label for="weeklyReport">Weekly Report</label>
+                    </div>
+                    <div class="notification-option">
+                        <input type="checkbox" id="unusualActivity">
+                        <label for="unusualActivity">Unusual Activity Alerts</label>
+                    </div>
+                    <button type="submit">Save Notification Preferences</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Category Management Section -->
+        <div class="settings-section">
+            <h2>Category Management</h2>
+            <div class="settings-option">
+                <h3>Custom Categories</h3>
+                <form id="categoryForm" class="settings-form">
+                    <div id="customCategories"></div>
+                    <button type="button" id="addCategory">Add New Category</button>
+                    <button type="submit">Save Categories</button>
+                    <div class="error-message" id="categoryError"></div>
+                </form>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2>Account Settings</h2>
+
+            <div class="settings-option">
+                <h3>Change Password</h3>
+                <form class="settings-form">
+                    <input type="password" placeholder="Current Password" required>
+                    <input type="password" placeholder="New Password" required>
+                    <input type="password" placeholder="Confirm New Password" required>
+                    <button type="submit">Update Password</button>
+                </form>
+            </div>
+
+            <div class="settings-option">
+                <h3>Change Email</h3>
+                <form class="settings-form">
+                    <input type="email" placeholder="Current Email" required>
+                    <input type="email" placeholder="New Email" required>
+                    <button type="submit">Update Email</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2>Data & Privacy</h2>
+            <div class="settings-option"></div>
+                <h3>Clear Data</h3>
+                <p>Remove all your personal data from the dashboard.</p>
+                <button class="danger-btn">Clear All Data</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2>Support & Help</h2>
+
+            <div class="settings-option">
+                <h3>Contact Support</h3>
+                <p>Need help? Our support team is here for you.</p>
+                <button>Contact Support</button>
+            </div>
+
+            <div class="settings-option">
+                <h3>Documentation</h3>
+                <p>View user guides and documentation.</p>
+                <button>View Docs</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2>Session</h2>
+
+            <div class="settings-option">
+                <h3>Logout</h3>
+                <p>Sign out from your account.</p>
+                <button class="danger-btn">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3>Confirm Action</h3>
+            <p id="confirmMessage"></p>
+            <button id="confirmYes">Yes</button>
+            <button id="confirmNo">No</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script>
+        // Encryption helper functions
+        const encryptData = (data, key) => {
+            return CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();
+        };
+
+        const decryptData = (encryptedData, key) => {
+            try {
+                const bytes = CryptoJS.AES.decrypt(encryptedData, key);
+                return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+            } catch (error) {
+                console.error('Decryption failed:', error);
+                return null;
+            }
+        };
+
+        // Session timeout (30 minutes)
+        const SESSION_TIMEOUT = 30 * 60 * 1000;
+        let sessionTimer;
+
+        const resetSessionTimer = () => {
+            clearTimeout(sessionTimer);
+            sessionTimer = setTimeout(() => {
+                localStorage.removeItem('sessionToken');
+                window.location.href = 'login.html';
+            }, SESSION_TIMEOUT);
+        };
+
+        document.addEventListener('click', resetSessionTimer);
+        document.addEventListener('keypress', resetSessionTimer);
+
+        // Input sanitization
+        const sanitizeInput = (input) => {
+            return input.replace(/[<>]/g, '');
+        };
+
+        // Load user settings
+        const loadUserSettings = () => {
+            try {
+                const encryptedSettings = localStorage.getItem('userSettings');
+                if (encryptedSettings) {
+                    const settings = decryptData(encryptedSettings, 'your-secret-key');
+                    if (settings) {
+                        document.getElementById('fullName').value = settings.fullName || '';
+                        document.getElementById('phone').value = settings.phone || '';
+                        document.getElementById('currency').value = settings.currency || 'USD';
+                        document.getElementById('totalBudget').value = settings.totalBudget || '';
+                        document.getElementById('budgetCurrency').value = settings.budgetCurrency || 'USD';
+                        document.getElementById('budgetAlerts').checked = settings.notifications?.budgetAlerts || false;
+                        document.getElementById('weeklyReport').checked = settings.notifications?.weeklyReport || false;
+                        document.getElementById('unusualActivity').checked = settings.notifications?.unusualActivity || false;
+                    }
+                }
+            } catch (error) {
+                showError('Failed to load settings');
+            }
+        };
+
+        // Save user settings
+        const saveUserSettings = (settings) => {
+            try {
+                const encryptedSettings = encryptData(settings, 'your-secret-key');
+                localStorage.setItem('userSettings', encryptedSettings);
+                showSuccess('Settings saved successfully');
+            } catch (error) {
+                showError('Failed to save settings');
+            }
+        };
+
+        // Form submission handlers
+        document.getElementById('profileForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = {
+                fullName: sanitizeInput(document.getElementById('fullName').value),
+                phone: sanitizeInput(document.getElementById('phone').value),
+                currency: sanitizeInput(document.getElementById('currency').value)
+            };
+
+            if (validateProfileData(formData)) {
+                showLoading(e.target);
+                setTimeout(() => {
+                    saveUserSettings(formData);
+                    hideLoading(e.target);
+                }, 1000);
+            }
+        });
+
+        // Validation functions
+        const validateProfileData = (data) => {
+            if (!data.fullName || data.fullName.length < 2) {
+                showError('Please enter a valid name');
+                return false;
+            }
+            if (data.phone && !/^\+?[\d\s-]{10,}$/.test(data.phone)) {
+                showError('Please enter a valid phone number');
+                return false;
+            }
+            return true;
+        };
+
+        // UI helpers
+        const showLoading = (element) => {
+            element.classList.add('loading');
+        };
+
+        const hideLoading = (element) => {
+            element.classList.remove('loading');
+        };
+
+        const showError = (message) => {
+            toastr.error(message);
+        };
+
+        const showSuccess = (message) => {
+            toastr.success(message);
+        };
+
+        // Confirmation dialog
+        const showConfirmDialog = (message, onConfirm) => {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmMessage').textContent = message;
+            modal.style.display = 'block';
+
+            document.getElementById('confirmYes').onclick = () => {
+                modal.style.display = 'none';
+                onConfirm();
+            };
+
+            document.getElementById('confirmNo').onclick = () => {
+                modal.style.display = 'none';
+            };
+        };
+
+        // Category management
+        const loadCategories = () => {
+            const container = document.getElementById('customCategories');
+            const categories = JSON.parse(localStorage.getItem('categories') || '[]');
+            
+            container.innerHTML = categories.map((category, index) => `
+                <div class="custom-category">
+                    <input type="text" value="${category}" required>
+                    <button type="button" onclick="removeCategory(${index})">Remove</button>
+                </div>
+            `).join('');
+        };
+
+        const addCategory = () => {
+            const container = document.getElementById('customCategories');
+            const div = document.createElement('div');
+            div.className = 'custom-category';
+            div.innerHTML = `
+                <input type="text" required>
+                <button type="button" onclick="this.parentElement.remove()">Remove</button>
+            `;
+            container.appendChild(div);
+        };
+
+        document.getElementById('addCategory').onclick = addCategory;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserSettings();
+            loadCategories();
+            resetSessionTimer();
+
+            // Configure toastr
+            toastr.options = {
+                closeButton: true,
+                progressBar: true,
+                positionClass: 'toast-top-right',
+                timeOut: 3000
+            };
+        });
+    </script>
+</body>
+</html>
