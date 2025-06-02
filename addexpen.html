@@ -8,29 +8,30 @@
     <script src="js/api-handler.js"></script>
     <script src="js/transaction-handler.js"></script>
     <script>
-      
-        // Get the transaction type buttons
-        const incomeBtn = document.querySelector('.type-btn.income');
-        const expenseBtn = document.querySelector('.type-btn.expense');
-        
-        // Add click event listeners to both buttons
-        incomeBtn.addEventListener('click', () => {
-            incomeBtn.classList.add('active');
-            expenseBtn.classList.remove('active');
-            updateCategoryDropdowns();
-        });
-        
-        expenseBtn.addEventListener('click', () => {
-            expenseBtn.classList.add('active');
-            incomeBtn.classList.remove('active');
-            updateCategoryDropdowns();
-        });
-        
-        // Function to get the current transaction type
-        function getTransactionType() {
-            return document.querySelector('.type-btn.active').dataset.type;
-        }
-        </script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the transaction type buttons
+    const incomeBtn = document.querySelector('.type-btn.income');
+    const expenseBtn = document.querySelector('.type-btn.expense');
+
+    // Add click event listeners to both buttons
+    incomeBtn.addEventListener('click', () => {
+        incomeBtn.classList.add('active');
+        expenseBtn.classList.remove('active');
+        updateCategoryDropdowns();
+    });
+
+    expenseBtn.addEventListener('click', () => {
+        expenseBtn.classList.add('active');
+        incomeBtn.classList.remove('active');
+        updateCategoryDropdowns();
+    });
+
+    // Function to get the current transaction type
+    window.getTransactionType = function() {
+        return document.querySelector('.type-btn.active').dataset.type;
+    };
+});
+    </script>
   
     <style>
         body {

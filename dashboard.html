@@ -860,6 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
             case 'view_categories':
                 response = "Expense Categories:\n\n🍜 Food & Dining\n🚗 Transportation\n🛒 Shopping\n📱 Bills & Utilities\n🎬 Entertainment\n💊 Healthcare\n\nClick any category in the dashboard to see details!";
+                response += "\n\nNeed help with a specific category?";
                 break;
             case 'expense_analysis':
                 response = "This Month's Top Expenses:\n\n1. 🍜 Food & Dining: ₹8,500\n2. 📱 Bills: ₹6,000\n3. 🛒 Shopping: ₹5,000\n\nWant to see the full analysis?";
@@ -1030,8 +1031,6 @@ document.head.appendChild(style);
 <script>
 function updateMetrics() {
     const transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-    
-    // Calculate totals
     let totalIncome = 0;
     let totalExpenses = 0;
 
@@ -1039,36 +1038,103 @@ function updateMetrics() {
         const amount = parseFloat(transaction.amount);
         if (transaction.type === 'income') {
             totalIncome += amount;
-        } else {
-            totalExpenses += amount;
+        } else if (transaction.type === 'expense') {
+            // Always use absolute value for expenses
+            totalExpenses += Math.abs(amount);
         }
     });
 
-    // Calculate remaining balance
     const remainingBalance = totalIncome - totalExpenses;
 
-    // Update the display
-    document.getElementById('total-income').textContent = 
+    document.getElementById('total-income').textContent =
         `₹${totalIncome.toLocaleString('en-IN')}`;
-    document.getElementById('total-expenses').textContent = 
+    document.getElementById('total-expenses').textContent =
         `₹${totalExpenses.toLocaleString('en-IN')}`;
-    document.getElementById('remaining-balance').textContent = 
+    document.getElementById('remaining-balance').textContent =
         `₹${remainingBalance.toLocaleString('en-IN')}`;
 
-    // Add color coding for balance
     const balanceElement = document.getElementById('remaining-balance');
     if (remainingBalance < 0) {
-        balanceElement.style.color = '#dc3545'; // Red for negative
+        balanceElement.style.color = '#dc3545';
     } else {
-        balanceElement.style.color = '#28a745'; // Green for positive
+        balanceElement.style.color = '#28a745';
     }
 }
 
-// Call updateMetrics when page loads and after any transaction changes
-document.addEventListener('DOMContentLoaded', updateMetrics);
+function formatCategory(category) {
+    if (!category) return '-';
+    return category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
+}
 
-// Update metrics whenever localStorage changes (if on the same page)
-window.addEventListener('storage', updateMetrics);
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-IN', options);
+}
+
+function updateRecentTransactions() {
+    const transactionsBody = document.getElementById('recent-transactions-body');
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+    // Sort by date descending, filter out transactions without a date
+    const sortedTransactions = transactions
+        .filter(t => t.date)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const recentTransactions = sortedTransactions.slice(0, 4);
+
+    transactionsBody.innerHTML = '';
+
+    if (recentTransactions.length === 0) {
+        transactionsBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="no-transactions">
+                    <div class="empty-state">
+                        <i class="fas fa-receipt"></i>
+                        <p>No transactions found</p>
+                        <small>Add your first transaction to get started</small>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    recentTransactions.forEach(transaction => {
+        const amount = Math.abs(parseFloat(transaction.amount));
+        const sign = transaction.type === 'income' ? '+' : '-';
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${formatDate(transaction.date)}</td>
+            <td>${transaction.description || '-'}</td>
+            <td>${formatCategory(transaction.category)}</td>
+            <td>
+                <span class="transaction-type ${transaction.type}">
+                    ${transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                </span>
+            </td>
+            <td class="amount ${transaction.type}">
+                ${sign}₹${amount.toLocaleString('en-IN')}
+            </td>
+        `;
+        transactionsBody.appendChild(row);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateMetrics();
+    updateRecentTransactions();
+    // ...existing code...
+});
+
+window.addEventListener('storage', function(e) {
+    if (e.key === 'transactions') {
+        updateMetrics();
+        updateRecentTransactions();
+    }
+});
+
+// ...existing code...
 </script>
 
 <!-- Add this JavaScript for the pie chart -->
@@ -1338,7 +1404,8 @@ function updateRecentTransactions() {
     // Add transactions to table
     recentTransactions.forEach(transaction => {
         const row = document.createElement('tr');
-        const amount = parseFloat(transaction.amount);
+        const amount = Math.abs(parseFloat(transaction.amount));
+        const sign = transaction.type === 'income' ? '+' : '-';
         
         row.innerHTML = `
             <td>${formatDate(transaction.date)}</td>
@@ -1350,7 +1417,7 @@ function updateRecentTransactions() {
                 </span>
             </td>
             <td class="amount ${transaction.type}">
-                ${transaction.type === 'income' ? '+' : '-'}₹${amount.toLocaleString('en-IN')}
+                ${sign}₹${amount.toLocaleString('en-IN')}
             </td>
         `;
         

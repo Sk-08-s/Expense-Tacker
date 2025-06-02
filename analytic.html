@@ -207,41 +207,60 @@
             endDate.valueAsDate = today;
             startDate.valueAsDate = new Date(today.setDate(today.getDate() - 7));
 
-            // Initialize charts
-            let trendChart = new Chart(document.getElementById('expense-trend'), {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Expenses',
-                        data: [],
-                        borderColor: '#764ba2',
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
+            // Store chart instances globally to update/destroy them
+            let trendChart, categoryChart;
 
-            let categoryChart = new Chart(document.getElementById('category-breakdown'), {
-                type: 'doughnut',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        data: [],
-                        backgroundColor: [
-                            '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0',
-                            '#9966ff', '#ff9f40', '#ea80fc', '#90caf9'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
+            // Chart initialization moved here for access in updateCharts
+            function createTrendChart(labels, data) {
+                const ctx = document.getElementById('expense-trend').getContext('2d');
+                if (trendChart) trendChart.destroy();
+                trendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Expenses',
+                            data: data,
+                            borderColor: '#764ba2',
+                            backgroundColor: 'rgba(118,75,162,0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            function createCategoryChart(labels, data) {
+                const ctx = document.getElementById('category-breakdown').getContext('2d');
+                if (categoryChart) categoryChart.destroy();
+                categoryChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: [
+                                '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0',
+                                '#9966ff', '#ff9f40', '#ea80fc', '#90caf9'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right' }
+                        }
+                    }
+                });
+            }
 
             // Filter button clicks
             filterBtns.forEach(btn => {
@@ -297,61 +316,83 @@
 
             // Initial load
             updateAnalytics('week');
-        });
 
-        function updateSummary(transactions) {
-            let totalIncome = 0;
-            let totalExpenses = 0;
-            let categoryTotals = {};
-
-            transactions.forEach(t => {
-                const amount = parseFloat(t.amount);
-                if (t.type === 'income') {
-                    totalIncome += amount;
-                } else {
-                    totalExpenses += amount;
-                    categoryTotals[t.category] = (categoryTotals[t.category] || 0) + amount;
-                }
-            });
-
-            const netBalance = totalIncome - totalExpenses;
-            const topCategory = Object.entries(categoryTotals)
-                .sort(([,a], [,b]) => b - a)[0]?.[0] || '-';
-
-            document.getElementById('total-income').textContent = 
-                `₹${totalIncome.toLocaleString('en-IN')}`;
-            document.getElementById('total-expenses').textContent = 
-                `₹${totalExpenses.toLocaleString('en-IN')}`;
-            document.getElementById('net-balance').textContent = 
-                `₹${netBalance.toLocaleString('en-IN')}`;
-            document.getElementById('top-category').textContent = 
-                topCategory.charAt(0).toUpperCase() + topCategory.slice(1);
-        }
-
-        function updateCharts(transactions) {
             // Update charts with filtered data
-            // ... (Chart update logic)
-        }
-
-        function updateTransactionTable(transactions) {
-            const tbody = document.getElementById('transactions-body');
-            tbody.innerHTML = '';
-
-            transactions.sort((a, b) => new Date(b.date) - new Date(a.date))
-                .forEach(t => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${new Date(t.date).toLocaleDateString('en-IN')}</td>
-                        <td>${t.description || '-'}</td>
-                        <td>${t.category.charAt(0).toUpperCase() + t.category.slice(1)}</td>
-                        <td>${t.type.charAt(0).toUpperCase() + t.type.slice(1)}</td>
-                        <td class="${t.type}">
-                            ${t.type === 'income' ? '+' : '-'}₹${parseFloat(t.amount).toLocaleString('en-IN')}
-                        </td>
-                    `;
-                    tbody.appendChild(row);
+            function updateCharts(transactions) {
+                // --- Trend Chart (Expenses over time) ---
+                // Group by date
+                const dateMap = {};
+                transactions.forEach(t => {
+                    if (t.type === 'expense') {
+                        const date = new Date(t.date).toLocaleDateString('en-IN');
+                        dateMap[date] = (dateMap[date] || 0) + Math.abs(parseFloat(t.amount));
+                    }
                 });
-        }
+                const sortedDates = Object.keys(dateMap).sort((a, b) => new Date(a) - new Date(b));
+                const trendData = sortedDates.map(date => dateMap[date]);
+                createTrendChart(sortedDates, trendData);
+
+                // --- Category Breakdown Chart ---
+                const categoryMap = {};
+                transactions.forEach(t => {
+                    if (t.type === 'expense') {
+                        const cat = t.category ? t.category.charAt(0).toUpperCase() + t.category.slice(1) : '-';
+                        categoryMap[cat] = (categoryMap[cat] || 0) + Math.abs(parseFloat(t.amount));
+                    }
+                });
+                const catLabels = Object.keys(categoryMap);
+                const catData = catLabels.map(cat => categoryMap[cat]);
+                createCategoryChart(catLabels, catData);
+            }
+
+            function updateSummary(transactions) {
+                let totalIncome = 0;
+                let totalExpenses = 0;
+                let categoryTotals = {};
+
+                transactions.forEach(t => {
+                    const amount = parseFloat(t.amount);
+                    if (t.type === 'income') {
+                        totalIncome += amount;
+                    } else {
+                        totalExpenses += amount;
+                        categoryTotals[t.category] = (categoryTotals[t.category] || 0) + amount;
+                    }
+                });
+
+                const netBalance = totalIncome - totalExpenses;
+                const topCategory = Object.entries(categoryTotals)
+                    .sort(([,a], [,b]) => b - a)[0]?.[0] || '-';
+
+                document.getElementById('total-income').textContent = 
+                    `₹${totalIncome.toLocaleString('en-IN')}`;
+                document.getElementById('total-expenses').textContent = 
+                    `₹${totalExpenses.toLocaleString('en-IN')}`;
+                document.getElementById('net-balance').textContent = 
+                    `₹${netBalance.toLocaleString('en-IN')}`;
+                document.getElementById('top-category').textContent = 
+                    topCategory.charAt(0).toUpperCase() + topCategory.slice(1);
+            }
+
+            function updateTransactionTable(transactions) {
+                const tbody = document.getElementById('transactions-body');
+                tbody.innerHTML = '';
+
+                transactions.sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .forEach(t => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${new Date(t.date).toLocaleDateString('en-IN')}</td>
+                            <td>${t.description || '-'}</td>
+                            <td>${t.category.charAt(0).toUpperCase() + t.category.slice(1)}</td>
+                            <td>${t.type.charAt(0).toUpperCase() + t.type.slice(1)}</td>
+                            <td class="${t.type}">
+                                ${t.type === 'income' ? '+' : '-'}₹${parseFloat(t.amount).toLocaleString('en-IN')}
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+            }
     // Add these functions after DOMContentLoaded
     
     // Spending Predictions
@@ -394,6 +435,7 @@
         }
         return dataCache.get(key).data;
     }
+    });
     </script>
 </body>
 </html>
